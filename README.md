@@ -1,93 +1,82 @@
 # puppet-sysctl
 
+## Apache 2 notice
+This code contains work produced by Matthias Saou with revisions made by
+Thomas Downes in accordance with the Apache 2.0 license under which it
+was released. It is re-released under Apache 2.0.
+
+The modifications restructure the code
+
+ * to allow the code to work at all in Puppet 4
+ * to take advantage of features only available in Puppet 4
+ * to address several issues in the original code that stem from the existence
+   of a `sysctl::base` class while `sysctl` itself was a defined resource. The
+   solution chosen was to make `sysctl` a class that uses a new defined resource
+   `sysctl::configuration`. It is therefore intentionally not backwards-compatible
+   but the changes are minor and documented below.
+
 ## Overview
 
-Manage sysctl variable values. All changes are immediately applied, as well as
-configured to become persistent. Tested on Red Hat Enterprise Linux 6 and 7.
+Manage sysctl variable values. All changes are immediately applied, configured
+to be persistent upon reboots, and optionally enforced on every Puppet run to
+if changes are made outside of this module. Tested on RHEL 6/7 derivatives and
+Debian 7/8.
 
- * `sysctl` : Definition to manage sysctl variables by setting a value.
- * `sysctl::base`: Base class (included from the definition).
+ * `sysctl`: base class that should be included in catalog
+ * `sysctl::configuration`: defined resource that manages specific key/values.
 
-For persistence to work, your Operating System needs to support looking for
-sysctl configuration inside `/etc/sysctl.d/`.
+For persistence to work, your OS needs to support looking for sysctl configuration
+inside `/etc/sysctl.d/`.
 
 You may optionally enable purging of the `/etc/sysctl.d/` directory, so that
 all files which are not (or no longer) managed by this module will be removed.
 
-Beware that for the purge to work, you need to either have at least one
-sysctl definition call left for the node, or include `sysctl::base` manually.
+You may also force a value to `ensure => absent`, which will revert a key to its
+default value upon the next reboot.
 
-You may also force a value to `ensure => absent`, which will always work.
-
-For the few original settings in the main `/etc/sysctl.conf` file, the value is
-also replaced so that running `sysctl -p` doesn't revert any change made by
-puppet.
+If settings for a key exist within `/etc/sysctl.conf`, they are removed using `sed`.
 
 ## Examples
 
-Enable IP forwarding globally :
+Enable IP forwarding globally:
 ```puppet
-sysctl { 'net.ipv4.ip_forward': value => '1' }
+sysctl::configuration { 'net.ipv4.ip_forward':
+  value => '1'
+}
 ```
-
-Set a value for maximum number of connections per UNIX socket :
-```puppet
-sysctl { 'net.core.somaxconn': value => '65536' }
-```
-
-Make sure we don't have any explicit value set for swappiness, typically
-because it was set at some point but no longer needs to be. The original
-value for existing nodes won't be reset until the next reboot :
-```puppet
-sysctl { 'vm.swappiness': ensure => absent }
-```
-
-If the order in which the files get applied is important, you can set it by
-using a file name prefix, which could also be set globally from `site.pp` :
-```puppet
-Sysctl { prefix => '60' }
-```
-
-To enable purging of settings, you can use hiera to set the `sysctl::base`
-`$purge` parameter :
-```yaml
----
-# sysctl
-sysctl::base::purge: true
-```
- 
-## Hiera
-
-It is also possible to manage all sysctl keys using hiera, through the
-`$values` parameter of the `sysctl::base` class. If sysctl values are spread
-across different hiera locations, it's also possible to merge all of them
-instead of having only the last one applied, by setting the
-`$hiera_merge_values` parameter to true.
+or using hiera with `hiera_include(classes)`:
 
 ```yaml
-sysctl::base::values:
+classes:
+  - sysctl
+
+sysctl::values:
   net.ipv4.ip_forward:
     value: '1'
-  net.core.somaxconn:
-    value: '65536'
-  vm.swappiness:
-    ensure: absent
 ```
 
-## Original /etc/sysctl.d entries
+Multi-valued settings should be set with a single space between them so
+that the enforcement on each run can be successful.
+```yaml
+sysctl::values:
+  net.ipv4.tcp_rmem:
+    value: '4096 65536 16777216'
+```
 
-When purging, puppet might want to remove files from `/etc/sysctl.d/` which
-have not been created by puppet, but need to be present. It's possible to
-set the same values for the same keys using puppet, but if the file comes from
-an OS package which gets updated, it might re-appear when the package gets
-updated. To work around this issue, it's possible to simply manage an
-identical file with this module. Example :
-
+Values can be unset so that they return to default at next reboot
 ```puppet
-package { 'libvirt': ensure => installed } ->
-sysctl { 'libvirtd':
-  suffix => '',
-  source => "puppet:///modules/${module_name}/libvirtd.sysctl",
+sysctl::configuration { 'vm.swappiness':
+  ensure => absent
 }
 ```
 
+You can enforce the order in which the variables are set by using a prefix:
+```puppet
+sysctl::configuration { 'net.ipv4.ip_forward':
+  value => '1',
+  prefix => '60'
+}
+```
+
+To enable purging of settings not known to this module, you can set
+`sysctl::purge` to true (default: false)

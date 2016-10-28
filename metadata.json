@@ -1,12 +1,12 @@
 {
-  "name": "thias-sysctl",
-  "version": "1.0.6",
-  "author": "Matthias Saou",
+  "name": "tpdownes-sysctl",
+  "version": "2.0.1",
+  "author": "Matthias Saou w/Puppet 4 modifications by Thomas Downes",
   "license": "Apache-2.0",
-  "summary": "Sysctl module",
-  "source": "git://github.com/thias/puppet-sysctl.git",
-  "project_page": "https://github.com/thias/puppet-sysctl",
-  "issues_url": "https://github.com/thias/puppet-sysctl/issues",
+  "summary": "Puppet 4 module for managing kernel settings with sysctl",
+  "source": "git://github.com/tpdownes/puppet-sysctl.git",
+  "project_page": "https://github.com/tpdownes/puppet-sysctl",
+  "issues_url": "https://github.com/tpdownes/puppet-sysctl/issues",
   "tags": [ "sysctl", "os" ],
   "operatingsystem_support": [
     {
@@ -29,11 +29,11 @@
   "requirements": [
     {
     "name": "pe",
-    "version_requirement": "3.x"
+    "version_requirement": "4.x"
     },
     {
     "name": "puppet",
-    "version_requirement": ">=2.7.20 <4.1.0"
+    "version_requirement": "4.x"
     }
   ],
   "dependencies": [],
