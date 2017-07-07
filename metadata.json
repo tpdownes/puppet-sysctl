@@ -36,6 +36,5 @@
     "version_requirement": "4.x"
     }
   ],
-  "dependencies": [],
-  "data_provider": "hiera"
+  "dependencies": []
 }
