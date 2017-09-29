@@ -9,10 +9,15 @@ class sysctl (Boolean $purge,
               String  $sysctl_dir_mode) {
 
   $defaults = {
-    sysctl_binary   => $sysctl_binary,
-    sysctl_dir_path => $sysctl_dir_path,
+    'sysctl_binary'   => $sysctl_binary,
+    'sysctl_dir_path' => $sysctl_dir_path,
   }
-  create_resources(sysctl::configuration, $values, $defaults)
+
+  $values.each | String $val, Hash $params | {  
+    sysctl::configuration { $val:
+      * => $defaults + $params,
+    }
+  }
 
   if $sysctl_dir {
     # if we're purging we should also recurse
